@@ -24,7 +24,6 @@ func (h *WalletHandler) ProcessOperation(ctx *gin.Context) {
 		return
 	}
 
-	// Проверяем валидность операции
 	if operation.Amount <= 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive"})
 		return
@@ -35,14 +34,12 @@ func (h *WalletHandler) ProcessOperation(ctx *gin.Context) {
 		return
 	}
 
-	// Проверяем существование кошелька
 	wallet, err := h.walletRepo.GetWallet(ctx.Request.Context(), operation.WalletID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get wallet"})
 		return
 	}
 
-	// Если кошелек не существует, создаем его
 	if wallet == nil {
 		if err := h.walletRepo.CreateWallet(ctx.Request.Context(), operation.WalletID); err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create wallet"})
@@ -50,7 +47,6 @@ func (h *WalletHandler) ProcessOperation(ctx *gin.Context) {
 		}
 	}
 
-	// Выполняем операцию
 	if err := h.walletRepo.UpdateWalletBalance(ctx.Request.Context(), operation.WalletID, operation.OperationType, operation.Amount); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
