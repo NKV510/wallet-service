@@ -18,7 +18,7 @@ type Config struct {
 	MaxDBConns int32
 }
 
-func Load() (*Config, error) {
+func LoadConfig() (*Config, error) {
 	if err := godotenv.Load("config.env"); err != nil {
 		return nil, fmt.Errorf("error loading config.env: %w", err)
 	}
@@ -44,9 +44,4 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-}
-func (cfg *Config) DatabaseURL() string {
-
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
 }
