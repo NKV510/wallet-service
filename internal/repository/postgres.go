@@ -51,7 +51,6 @@ func (r *WalletRepository) UpdateWalletBalance(ctx context.Context, walletID str
 	}
 	defer tx.Rollback(ctx)
 
-	// Сначала проверяем существование кошелька и блокируем строку для обновления
 	var currentBalance int64
 	err = tx.QueryRow(ctx, "SELECT balance FROM wallets WHERE id = $1 FOR UPDATE", walletID).Scan(&currentBalance)
 	if err != nil {
@@ -61,7 +60,6 @@ func (r *WalletRepository) UpdateWalletBalance(ctx context.Context, walletID str
 		return fmt.Errorf("failed to get wallet balance: %w", err)
 	}
 
-	// Вычисляем новый баланс
 	var newBalance int64
 	switch operationType {
 	case models.DEPOSIT:
@@ -75,7 +73,6 @@ func (r *WalletRepository) UpdateWalletBalance(ctx context.Context, walletID str
 		return fmt.Errorf("invalid operation type")
 	}
 
-	// Обновляем баланс
 	query := `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE id = $2`
 	_, err = tx.Exec(ctx, query, newBalance, walletID)
 	if err != nil {
