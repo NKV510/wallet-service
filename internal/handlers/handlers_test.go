@@ -22,7 +22,6 @@ func setupTestHandler(t *testing.T) (*WalletHandler, *pgxpool.Pool) {
 	dbPool, err := pgxpool.New(context.Background(), "postgres://postgres:password@localhost:5433/wallet_test")
 	require.NoError(t, err)
 
-	// Очистка таблицы перед тестом
 	_, err = dbPool.Exec(context.Background(), "DELETE FROM wallets")
 	require.NoError(t, err)
 

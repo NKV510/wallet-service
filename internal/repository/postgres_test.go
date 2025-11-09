@@ -80,8 +80,8 @@ func TestWalletRepository_GetWallet(t *testing.T) {
 		},
 		{
 			name:      "get non-existing wallet",
-			walletID:  "00000000-0000-0000-0000-000000000000", // Валидный UUID
-			wantError: true,                                   // Должна быть ошибка!
+			walletID:  "00000000-0000-0000-0000-000000000000",
+			wantError: true,
 		},
 	}
 
