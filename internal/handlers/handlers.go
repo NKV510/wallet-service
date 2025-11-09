@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/NKV510/wallet-service/internal/models"
@@ -9,73 +10,80 @@ import (
 )
 
 type WalletHandler struct {
-	walletRepo *repository.WalletRepository
+	repo *repository.WalletRepository
 }
 
-func NewWalletHandler(walletRepo *repository.WalletRepository) *WalletHandler {
-	return &WalletHandler{walletRepo: walletRepo}
+func NewWalletHandler(repo *repository.WalletRepository) *WalletHandler {
+	return &WalletHandler{repo: repo}
 }
 
-func (h *WalletHandler) ProcessOperation(ctx *gin.Context) {
+func (h *WalletHandler) ProcessOperation(c *gin.Context) {
 	var operation models.WalletOperation
+	if err := c.BindJSON(&operation); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
 
-	if err := ctx.ShouldBindJSON(&operation); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	// Валидация
+	if operation.WalletID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "wallet ID is required"})
 		return
 	}
 
 	if operation.Amount <= 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive"})
 		return
 	}
 
 	if operation.OperationType != models.DEPOSIT && operation.OperationType != models.WITHDRAW {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid operation type"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid operation type"})
 		return
 	}
 
-	wallet, err := h.walletRepo.GetWallet(ctx.Request.Context(), operation.WalletID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get wallet"})
+	// Создаем кошелек если не существует
+	existingWallet, err := h.repo.GetWallet(c.Request.Context(), operation.WalletID)
+	if err != nil && err.Error() != "wallet not found" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to get wallet: %v", err)})
 		return
 	}
 
-	if wallet == nil {
-		if err := h.walletRepo.CreateWallet(ctx.Request.Context(), operation.WalletID); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create wallet"})
+	if existingWallet == nil {
+		if err := h.repo.CreateWallet(c.Request.Context(), operation.WalletID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create wallet: %v", err)})
 			return
 		}
 	}
 
-	if err := h.walletRepo.UpdateWalletBalance(ctx.Request.Context(), operation.WalletID, operation.OperationType, operation.Amount); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Выполняем операцию
+	if err := h.repo.UpdateWalletBalance(c.Request.Context(), operation.WalletID, operation.OperationType, operation.Amount); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"status": "success"})
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
-func (h *WalletHandler) GetWalletBalance(ctx *gin.Context) {
-	walletID := ctx.Param("walletId")
-
+func (h *WalletHandler) GetWalletBalance(c *gin.Context) {
+	walletID := c.Param("walletId") // Используем gin.Param
 	if walletID == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Wallet ID is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Wallet ID is required"})
 		return
 	}
 
-	wallet, err := h.walletRepo.GetWallet(ctx.Request.Context(), walletID)
+	wallet, err := h.repo.GetWallet(c.Request.Context(), walletID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get wallet"})
+		if err.Error() == "wallet not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "wallet not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to get wallet: %v", err)})
 		return
 	}
 
-	if wallet == nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "wallet not found"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, models.WalletBalanceResponse{
+	response := models.WalletBalanceResponse{
 		WalletID: wallet.ID,
 		Balance:  wallet.Balance,
-	})
+	}
+
+	c.JSON(http.StatusOK, response)
 }

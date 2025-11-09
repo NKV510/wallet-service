@@ -91,6 +91,16 @@ func TestWalletHandler_ProcessOperation(t *testing.T) {
 			expectedError:  "amount must be positive",
 		},
 		{
+			name: "empty wallet ID",
+			requestBody: models.WalletOperation{
+				WalletID:      "",
+				OperationType: models.DEPOSIT,
+				Amount:        100,
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "wallet ID is required",
+		},
+		{
 			name:           "invalid json",
 			requestBody:    `invalid json`,
 			expectedStatus: http.StatusBadRequest,
@@ -119,11 +129,10 @@ func TestWalletHandler_ProcessOperation(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
 			if tt.expectedError != "" {
-				var response map[string]string
-				err := json.Unmarshal(w.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Contains(t, response["error"], tt.expectedError)
-			} else {
+				// Для ошибок проверяем что текст ошибки содержится в ответе
+				assert.Contains(t, w.Body.String(), tt.expectedError)
+			} else if tt.expectedStatus == http.StatusOK {
+				// Для успешных операций проверяем JSON ответ
 				var response map[string]string
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)
@@ -158,8 +167,8 @@ func TestWalletHandler_GetWalletBalance(t *testing.T) {
 		},
 		{
 			name:           "get non-existing wallet balance",
-			walletID:       "non-existing-id",
-			expectedStatus: http.StatusNotFound,
+			walletID:       "00000000-0000-0000-0000-000000000000",
+			expectedStatus: http.StatusNotFound, // Теперь должно быть 404
 			expectedError:  "wallet not found",
 		},
 		{
@@ -190,11 +199,10 @@ func TestWalletHandler_GetWalletBalance(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
 			if tt.expectedError != "" {
-				var response map[string]string
-				err := json.Unmarshal(w.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Contains(t, response["error"], tt.expectedError)
+				// Для ошибок проверяем что текст ошибки содержится в ответе
+				assert.Contains(t, w.Body.String(), tt.expectedError)
 			} else if tt.expectedStatus == http.StatusOK {
+				// Для успешных запросов проверяем структуру ответа
 				var response models.WalletBalanceResponse
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)

@@ -36,7 +36,7 @@ func (r *WalletRepository) GetWallet(ctx context.Context, walletID string) (*mod
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return nil, fmt.Errorf("wallet not found")
 		}
 		return nil, err
 	}

@@ -80,8 +80,8 @@ func TestWalletRepository_GetWallet(t *testing.T) {
 		},
 		{
 			name:      "get non-existing wallet",
-			walletID:  "non-existing-id",
-			wantError: false,
+			walletID:  "00000000-0000-0000-0000-000000000000", // Валидный UUID
+			wantError: true,                                   // Должна быть ошибка!
 		},
 	}
 
@@ -89,13 +89,14 @@ func TestWalletRepository_GetWallet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			wallet, err := repo.GetWallet(context.Background(), tt.walletID)
 
-			assert.NoError(t, err)
-			if tt.walletID == walletID {
+			if tt.wantError {
+				assert.Error(t, err)
+				assert.Nil(t, wallet)
+			} else {
+				assert.NoError(t, err)
 				assert.NotNil(t, wallet)
 				assert.Equal(t, walletID, wallet.ID)
 				assert.Equal(t, int64(0), wallet.Balance)
-			} else {
-				assert.Nil(t, wallet)
 			}
 		})
 	}
@@ -152,7 +153,7 @@ func TestWalletRepository_UpdateWalletBalance(t *testing.T) {
 		},
 		{
 			name:          "non-existing wallet",
-			walletID:      "non-existing-id",
+			walletID:      "00000000-0000-0000-0000-000000000000", // Валидный UUID
 			operationType: models.DEPOSIT,
 			amount:        100,
 			wantError:     true,
