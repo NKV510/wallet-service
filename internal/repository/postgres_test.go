@@ -108,7 +108,6 @@ func TestWalletRepository_UpdateWalletBalance(t *testing.T) {
 
 	repo := NewWalletRepository(dbPool)
 
-	// Создаем тестовый кошелек
 	walletID := "123e4567-e89b-12d3-a456-426614174000"
 	err := repo.CreateWallet(context.Background(), walletID)
 	require.NoError(t, err)
@@ -153,7 +152,7 @@ func TestWalletRepository_UpdateWalletBalance(t *testing.T) {
 		},
 		{
 			name:          "non-existing wallet",
-			walletID:      "00000000-0000-0000-0000-000000000000", // Валидный UUID
+			walletID:      "00000000-0000-0000-0000-000000000000",
 			operationType: models.DEPOSIT,
 			amount:        100,
 			wantError:     true,
@@ -173,7 +172,6 @@ func TestWalletRepository_UpdateWalletBalance(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 
-				// Проверяем, что баланс обновился корректно
 				wallet, err := repo.GetWallet(context.Background(), walletID)
 				assert.NoError(t, err)
 				assert.NotNil(t, wallet)

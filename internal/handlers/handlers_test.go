@@ -110,29 +110,23 @@ func TestWalletHandler_ProcessOperation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Создаем HTTP запрос
 			body, _ := json.Marshal(tt.requestBody)
 			req, err := http.NewRequest("POST", "/api/v1/wallet", bytes.NewBuffer(body))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
-			// Создаем ResponseRecorder и Gin контекст
 			w := httptest.NewRecorder()
 			gin.SetMode(gin.TestMode)
 			c, _ := gin.CreateTestContext(w)
 			c.Request = req
 
-			// Вызываем хендлер
 			handler.ProcessOperation(c)
 
-			// Проверяем результат
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
 			if tt.expectedError != "" {
-				// Для ошибок проверяем что текст ошибки содержится в ответе
 				assert.Contains(t, w.Body.String(), tt.expectedError)
 			} else if tt.expectedStatus == http.StatusOK {
-				// Для успешных операций проверяем JSON ответ
 				var response map[string]string
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)
@@ -146,7 +140,6 @@ func TestWalletHandler_GetWalletBalance(t *testing.T) {
 	handler, dbPool := setupTestHandler(t)
 	defer dbPool.Close()
 
-	// Создаем тестовый кошелек с балансом
 	walletID := "123e4567-e89b-12d3-a456-426614174000"
 	repo := repository.NewWalletRepository(dbPool)
 	err := repo.CreateWallet(context.Background(), walletID)
@@ -168,7 +161,7 @@ func TestWalletHandler_GetWalletBalance(t *testing.T) {
 		{
 			name:           "get non-existing wallet balance",
 			walletID:       "00000000-0000-0000-0000-000000000000",
-			expectedStatus: http.StatusNotFound, // Теперь должно быть 404
+			expectedStatus: http.StatusNotFound,
 			expectedError:  "wallet not found",
 		},
 		{
@@ -181,28 +174,22 @@ func TestWalletHandler_GetWalletBalance(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Создаем HTTP запрос
 			req, err := http.NewRequest("GET", "/api/v1/wallets/"+tt.walletID, nil)
 			require.NoError(t, err)
 
-			// Создаем ResponseRecorder и Gin контекст
 			w := httptest.NewRecorder()
 			gin.SetMode(gin.TestMode)
 			c, _ := gin.CreateTestContext(w)
 			c.Request = req
 			c.Params = gin.Params{gin.Param{Key: "walletId", Value: tt.walletID}}
 
-			// Вызываем хендлер
 			handler.GetWalletBalance(c)
 
-			// Проверяем результат
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
 			if tt.expectedError != "" {
-				// Для ошибок проверяем что текст ошибки содержится в ответе
 				assert.Contains(t, w.Body.String(), tt.expectedError)
 			} else if tt.expectedStatus == http.StatusOK {
-				// Для успешных запросов проверяем структуру ответа
 				var response models.WalletBalanceResponse
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)

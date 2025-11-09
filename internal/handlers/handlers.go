@@ -24,7 +24,6 @@ func (h *WalletHandler) ProcessOperation(c *gin.Context) {
 		return
 	}
 
-	// Валидация
 	if operation.WalletID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "wallet ID is required"})
 		return
@@ -40,7 +39,6 @@ func (h *WalletHandler) ProcessOperation(c *gin.Context) {
 		return
 	}
 
-	// Создаем кошелек если не существует
 	existingWallet, err := h.repo.GetWallet(c.Request.Context(), operation.WalletID)
 	if err != nil && err.Error() != "wallet not found" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to get wallet: %v", err)})
@@ -54,7 +52,6 @@ func (h *WalletHandler) ProcessOperation(c *gin.Context) {
 		}
 	}
 
-	// Выполняем операцию
 	if err := h.repo.UpdateWalletBalance(c.Request.Context(), operation.WalletID, operation.OperationType, operation.Amount); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -64,7 +61,7 @@ func (h *WalletHandler) ProcessOperation(c *gin.Context) {
 }
 
 func (h *WalletHandler) GetWalletBalance(c *gin.Context) {
-	walletID := c.Param("walletId") // Используем gin.Param
+	walletID := c.Param("walletId")
 	if walletID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Wallet ID is required"})
 		return
