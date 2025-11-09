@@ -1,4 +1,4 @@
-.PHONY: help build up start down stop restart logs ps
+.PHONY: help build up start down stop restart logs ps test-integration
 
 help:
 	@echo "Available commands:"
@@ -37,3 +37,8 @@ logs:
 
 ps:
 	docker compose -f docker-compose.yml ps
+test-integration:
+	docker compose -f docker-compose.test.yml up -d
+	sleep 5
+	go test ./internal/repository/... ./internal/handlers/... -v -tags=integration
+	docker compose -f docker-compose.test.yml down
